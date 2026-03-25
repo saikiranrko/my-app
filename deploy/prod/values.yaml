@@ -1,0 +1,21 @@
+replicaCount: 3
+
+ingress:
+  host: my-app-prod.lab.local
+
+env:
+  APP_ENV: "production"
+  LOG_LEVEL: "warn"
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10

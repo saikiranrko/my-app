@@ -1,0 +1,21 @@
+replicaCount: 2
+
+ingress:
+  host: my-app-staging.lab.local
+
+env:
+  APP_ENV: "staging"
+  LOG_LEVEL: "info"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
