@@ -1,0 +1,126 @@
+name: CD pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI pipeline"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy-dev:
+    name: Deploy to dev
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group rg-devops-lab \
+            --name aks-devops-lab \
+            --overwrite-existing
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy to dev
+        run: |
+          helm upgrade --install my-app ./chart \
+            -f chart/values.yaml \
+            -f deploy/dev/values.yaml \
+            --set image.tag=${{ github.event.workflow_run.head_sha }} \
+            --namespace my-app-dev \
+            --create-namespace \
+            --wait --timeout 5m
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/my-app -n my-app-dev
+          kubectl get pods -n my-app-dev
+
+  deploy-staging:
+    name: Deploy to staging
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group rg-devops-lab \
+            --name aks-devops-lab \
+            --overwrite-existing
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy to staging
+        run: |
+          helm upgrade --install my-app ./chart \
+            -f chart/values.yaml \
+            -f deploy/staging/values.yaml \
+            --set image.tag=${{ github.event.workflow_run.head_sha }} \
+            --namespace my-app-staging \
+            --create-namespace \
+            --wait --timeout 5m
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/my-app -n my-app-staging
+          kubectl get pods -n my-app-staging
+
+  deploy-prod:
+    name: Deploy to prod
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group rg-devops-lab \
+            --name aks-devops-lab \
+            --overwrite-existing
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy to prod
+        run: |
+          helm upgrade --install my-app ./chart \
+            -f chart/values.yaml \
+            -f deploy/prod/values.yaml \
+            --set image.tag=${{ github.event.workflow_run.head_sha }} \
+            --namespace my-app-prod \
+            --create-namespace \
+            --wait --timeout 10m
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/my-app -n my-app-prod
+          kubectl get pods -n my-app-prod
+
+      - name: Rollback on failure
+        if: failure()
+        run: helm rollback my-app -n my-app-prod
