@@ -8,12 +8,11 @@ on:
 
 env:
   IMAGE_NAME: my-app
-  ACR_SERVER: ${{ secrets.ACR_SERVER }}
 
 jobs:
   build-test:
     name: Build and test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v4
 
@@ -36,7 +35,7 @@ jobs:
 
   sonar-scan:
     name: SonarQube analysis
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     needs: build-test
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +60,7 @@ jobs:
 
   ghas-scan:
     name: Dependency review
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     needs: build-test
     if: github.event_name == 'pull_request'
     steps:
@@ -73,7 +72,7 @@ jobs:
 
   docker-build-push:
     name: Docker build and push to ACR
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     needs: [sonar-scan]
     if: github.ref == 'refs/heads/main'
     outputs:
@@ -109,7 +108,7 @@ jobs:
 
   helm-publish:
     name: Publish Helm chart to JFrog
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     needs: docker-build-push
     steps:
       - uses: actions/checkout@v4

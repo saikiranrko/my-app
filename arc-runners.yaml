@@ -1,0 +1,15 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: my-app-runners
+  namespace: arc-runners
+spec:
+  replicas: 2
+  template:
+    spec:
+      repository: saikiranrko/my-app
+      labels:
+        - self-hosted
+        - linux
+        - x64
+      env: []
