@@ -12,4 +12,22 @@ spec:
         - self-hosted
         - linux
         - x64
-      env: []
+      image: summerwind/actions-runner:latest
+      initContainers:
+      - name: install-tools
+        image: ubuntu:22.04
+        command:
+        - sh
+        - -c
+        - |
+          apt-get update && \
+          apt-get install -y curl wget unzip maven default-jdk-headless && \
+          curl -fsSL https://get.docker.com | sh
+        volumeMounts:
+        - name: tools
+          mountPath: /usr/local/bin
+      env:
+      - name: JAVA_HOME
+        value: /usr/lib/jvm/default-java
+      - name: PATH
+        value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/jvm/default-java/bin
