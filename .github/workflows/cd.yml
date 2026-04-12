@@ -15,10 +15,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Azure CLI and Helm
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q curl apt-transport-https lsb-release gnupg
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
       - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+        run: |
+          az login --service-principal \
+            --username ${{ secrets.AZURE_CLIENT_ID }} \
+            --password ${{ secrets.AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Get AKS credentials
         run: |
@@ -26,9 +36,6 @@ jobs:
             --resource-group rg-devops-lab \
             --name aks-devops-lab \
             --overwrite-existing
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
 
       - name: Deploy to dev
         run: |
@@ -53,10 +60,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Azure CLI and Helm
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q curl apt-transport-https lsb-release gnupg
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
       - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+        run: |
+          az login --service-principal \
+            --username ${{ secrets.AZURE_CLIENT_ID }} \
+            --password ${{ secrets.AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Get AKS credentials
         run: |
@@ -64,9 +81,6 @@ jobs:
             --resource-group rg-devops-lab \
             --name aks-devops-lab \
             --overwrite-existing
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
 
       - name: Deploy to prod
         run: |
